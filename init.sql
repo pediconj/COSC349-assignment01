@@ -1,0 +1,11 @@
+CREATE TABLE pages (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE bookmarks (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    url VARCHAR(255) NOT NULL,
+    page_id INTEGER NOT NULL REFERENCES pages(id) ON DELETE CASCADE
+);
