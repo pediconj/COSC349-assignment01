@@ -18,6 +18,15 @@
 </head>
 <body>
     <div class="card">
+        <h2>Pages</h2>
+        <div class="form-group" style="margin-bottom:0.5rem;">
+            <select id="page-select" onchange="handlePageChange()" style="width:100%;padding:0.5rem;border-radius:4px;border:1px solid #ccc;"></select>
+        </div>
+        <div style="display:flex;gap:0.5rem;margin-bottom:1rem;">
+            <input type="text" id="new-page-name" placeholder="New page name" style="flex:1;padding:0.5rem;border:1px solid #ccc;border-radius:4px;" />
+            <button onclick="createPage()" style="width:auto;padding:0.5rem 1rem;">Create</button>
+            <button onclick="deleteCurrentPage()" style="width:auto;padding:0.5rem 1rem;background:#dc3545;">Delete</button>
+        </div>
 
         <h2>Add a Bookmark</h2>
         <div class="form-group">
@@ -40,7 +49,61 @@
 
         let currentPageId = null;
 
-        
+        async function fetchPages() {
+            const res = await fetch(`${API_BASE}/pages`);
+            const pages = await res.json();
+            const sel = document.getElementById('page-select');
+            sel.innerHTML = '';
+            pages.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                opt.textContent = p.name;
+                sel.appendChild(opt);
+            });
+
+            if(pages.length > 0) {
+                currentPageId = pages[0].id;
+                sel.value = currentPageId;
+            } else {
+                currentPageId = null;
+            }
+
+            fetchBookmarks();
+        }
+
+        async function createPage() {
+            const name = document.getElementById('new-page-name').value.trim();
+            if(!name) return alert('Enter a page name');
+            const res = await fetch(`${API_BASE}/pages`, {
+                method: 'POST', headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({ name })
+            });
+            if(res.ok) {
+                document.getElementById('new-page-name').value = '';
+                await fetchPages();
+                // select newly created page (last in list)
+                const sel = document.getElementById('page-select');
+                sel.selectedIndex = sel.options.length - 1;
+                currentPageId = sel.value;
+                fetchBookmarks();
+            }
+        }
+
+        async function deleteCurrentPage() {
+            const sel = document.getElementById('page-select');
+            const id = sel.value;
+            if(!id) return;
+            if(!confirm('Delete this page and its bookmarks?')) return;
+            await fetch(`${API_BASE}/pages/${id}`, { method: 'DELETE' });
+            await fetchPages();
+        }
+
+        async function handlePageChange() {
+            const sel = document.getElementById('page-select');
+            currentPageId = sel.value;
+            fetchBookmarks();
+        }
+
         async function fetchBookmarks() {
             const list = document.getElementById('bookmark-list');
             list.innerHTML = '';
